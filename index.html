@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบแสดงผลการเรียนออนไลน์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="https://github.com/sutisom/grade/blob/main/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="https://github.com/sutisom/grade/blob/main/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32"  href="favicon.png">
+    <link rel="icon" type="image/icon" sizes="32x32"  href="favicon.ico">
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+    <!-- ส่วนเข้าสู่ระบบ -->
+    <div id="login-section" class="flex-grow flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 border border-sky-200">
+            <h1 class="text-3xl font-bold text-center text-sky-700 mb-2">เข้าสู่ระบบ</h1>
+            <p class="text-center text-sky-500 mb-6">กรุณาใช้รหัสประจำตัวนักเรียนเพื่อเข้าสู่ระบบ</p>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="username" class="block text-sky-700 text-sm font-bold mb-2">รหัสประจำตัวนักเรียน</label>
+                    <input type="text" id="username" class="shadow-sm appearance-none border border-sky-300 rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="กรอกรหัสประจำตัว" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sky-700 text-sm font-bold mb-2">รหัสผ่าน (ใช้รหัสประจำตัวนักเรียน)</label>
+                    <input type="password" id="password" class="shadow-sm appearance-none border border-sky-300 rounded-lg w-full py-3 px-4 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-sky-500" placeholder="กรอกรหัสประจำตัวอีกครั้ง" required>
+                </div>
+                <div id="error-message" class="text-red-500 text-center mb-4 hidden"></div>
+                <div class="flex items-center justify-center">
+                    <button type="submit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-4 rounded-lg shadow-md focus:outline-none focus:shadow-outline transition-all duration-300 transform hover:scale-105 disabled:bg-sky-300 disabled:scale-100">
+                        เข้าสู่ระบบ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ส่วนเนื้อหา -->
+    <main id="main-content" class="container mx-auto p-4 md:p-6 hidden flex-grow">
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-sky-200">
+            <div class="flex flex-col md:flex-row justify-between items-start mb-6 pb-4 border-b border-sky-200">
+                <div>
+                    <h1 class="text-3xl font-bold text-sky-700">ผลการเรียนออนไลน์</h1>
+                    <div class="mt-2 text-sky-600 space-y-1">
+                        <p>ชื่อ-สกุล: <span id="student-name-display" class="font-semibold text-sky-800"></span></p>
+                        <p>ระดับชั้น: <span id="student-class-display" class="font-semibold text-sky-800"></span></p>
+                        <p class="text-lg mt-2 font-semibold text-sky-700">เกรดเฉลี่ยภาคเรียน: <span id="student-gpa-display" class="text-2xl font-bold text-sky-800"></span></p>
+                    </div>
+                </div>
+                <button id="logout-button" class="mt-4 md:mt-0 w-full md:w-auto bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-colors">
+                    ออกจากระบบ
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <label for="semester-filter" class="block text-sky-700 text-sm font-bold mb-2">เลือกภาคเรียน:</label>
+                <select id="semester-filter" class="block w-full md:w-1/3 bg-white border border-sky-300 text-sky-900 rounded-lg focus:ring-sky-500 focus:border-sky-500 p-2.5">
+                </select>
+            </div>
+            
+            <div id="table-container" class="overflow-x-auto"></div>
+        </div>
+    </main>
+
+    <!-- ส่วนท้าย -->
+    <footer class="text-center py-4 text-sm text-sky-600 bg-white border-t border-sky-200">
+        Copyright 2025 &copy; krutoey
+    </footer>
+
+    <!-- Script -->
+    <script>
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwulGPq2_yNRSMDTHrGBZvRh7B63uJCx8t8LWPF1S2RQokbs0pHES9M4U85ORtc0K3a/exec';
+        
+        const loginSection = document.getElementById('login-section');
+        const mainContent = document.getElementById('main-content');
+        const loginForm = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+        const logoutButton = document.getElementById('logout-button');
+        const semesterFilter = document.getElementById('semester-filter');
+        const tableContainer = document.getElementById('table-container');
+        const studentGPADisplay = document.getElementById('student-gpa-display');
+        
+        let allGradesData = [];
+
+        function gradeToNumber(grade) {
+            const numGrade = parseFloat(grade);
+            if (!isNaN(numGrade) && numGrade >= 0 && numGrade <= 4) return numGrade;
+            switch (grade.trim()) {
+                case '4': case 'A': return 4.0;
+                case '3.5': case 'B+': return 3.5;
+                case '3': case 'B': return 3.0;
+                case '2.5': case 'C+': return 2.5;
+                case '2': case 'C': return 2.0;
+                case '1.5': case 'D+': return 1.5;
+                case '1': case 'D': return 1.0;
+                case '0': case 'F': return 0.0;
+                default: return null; 
+            }
+        }
+
+        function calculateGPA(data) {
+            let totalGradePoints = 0;
+            let totalCredits = 0;
+            data.forEach(item => {
+                const grade = gradeToNumber(item['เกรด']);
+                const credit = parseFloat(item['หน่วยกิต']);
+                if (grade !== null && !isNaN(credit) && credit > 0) {
+                    totalGradePoints += grade * credit;
+                    totalCredits += credit;
+                }
+            });
+            if (totalCredits === 0) return 'N/A';
+            return (totalGradePoints / totalCredits).toFixed(2);
+        }
+
+        function displayGPA(data, selectedSemester) {
+            const filteredData = data.filter(item => item['ภาคเรียน'] == selectedSemester);
+            const gpa = calculateGPA(filteredData);
+            studentGPADisplay.textContent = gpa;
+        }
+        
+        async function handleLogin(event) {
+            event.preventDefault();
+            const studentId = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!studentId || !password) {
+                errorMessage.textContent = 'กรุณากรอกรหัสประจำตัวนักเรียนให้ครบถ้วน';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            if (studentId !== password) {
+                errorMessage.textContent = 'รหัสประจำตัวที่กรอกไม่ตรงกัน';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+            
+            errorMessage.classList.add('hidden');
+            const loginButton = loginForm.querySelector('button[type="submit"]');
+            const originalButtonText = loginButton.innerHTML;
+            loginButton.innerHTML = `<div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white mx-auto"></div>`;
+            loginButton.disabled = true;
+
+            try {
+                const response = await fetch(SCRIPT_URL);
+                if (!response.ok) throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้');
+                
+                const result = await response.json();
+                if (result.success) {
+                    const studentData = result.data.filter(row => row['รหัสประจำตัว'] == studentId);
+                    if (studentData.length > 0) {
+                        allGradesData = studentData;
+                        loginSection.classList.add('hidden');
+                        mainContent.classList.remove('hidden');
+                        displayStudentInfo(allGradesData);
+                        populateSemesterFilter(allGradesData);
+                        const selectedSemester = semesterFilter.value;
+                        renderTable(allGradesData, selectedSemester);
+                        displayGPA(allGradesData, selectedSemester); 
+                    } else {
+                        errorMessage.textContent = 'ไม่พบข้อมูลรหัสประจำตัวนักเรียนนี้';
+                        errorMessage.classList.remove('hidden');
+                    }
+                } else {
+                    throw new Error(result.error || 'เกิดข้อผิดพลาดในการดึงข้อมูล');
+                }
+            } catch (error) {
+                let friendlyError = 'เกิดข้อผิดพลาด: ' + error.message;
+                if (error.message.includes('Failed to fetch')) {
+                    friendlyError = 'ไม่สามารถเชื่อมต่อกับ Google Sheet API ได้ กรุณาตรวจสอบว่า URL ถูกต้อง';
+                }
+                errorMessage.textContent = friendlyError;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loginButton.innerHTML = originalButtonText;
+                loginButton.disabled = false;
+            }
+        }
+
+        function handleLogout() {
+            loginSection.classList.remove('hidden');
+            mainContent.classList.add('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            allGradesData = [];
+            semesterFilter.innerHTML = '';
+            tableContainer.innerHTML = '';
+            studentGPADisplay.textContent = '';
+        }
+
+        function displayStudentInfo(data) {
+            const studentNameDisplay = document.getElementById('student-name-display');
+            const studentClassDisplay = document.getElementById('student-class-display');
+            if (data.length > 0 && data[0]['ชื่อ-สกุล'] && data[0]['ระดับชั้น']) {
+                studentNameDisplay.textContent = data[0]['ชื่อ-สกุล'];
+                studentClassDisplay.textContent = data[0]['ระดับชั้น'];
+            } else {
+                studentNameDisplay.textContent = 'ไม่พบข้อมูล';
+                studentClassDisplay.textContent = 'ไม่พบข้อมูล';
+            }
+        }
+
+        function populateSemesterFilter(data) {
+            const semesters = [...new Set(data.map(item => item['ภาคเรียน']))].sort((a, b) => b.localeCompare(a));
+            semesterFilter.innerHTML = '';
+            semesters.forEach(semester => {
+                const option = document.createElement('option');
+                option.value = semester;
+                option.textContent = semester;
+                semesterFilter.appendChild(option);
+            });
+        }
+
+        // ✅ renderTable เฉพาะ 4 คอลัมน์
+        function renderTable(data, selectedSemester) {
+            const filteredData = data.filter(item => item['ภาคเรียน'] == selectedSemester);
+            if (filteredData.length === 0) {
+                tableContainer.innerHTML = '<p class="text-center text-sky-500">ไม่พบข้อมูลสำหรับภาคเรียนนี้</p>';
+                return;
+            }
+
+            const columnsToShow = ['รหัสวิชา', 'ชื่อวิชา', 'หน่วยกิต', 'เกรด'];
+
+            let tableHTML = `
+                <table class="min-w-full divide-y divide-sky-200 border border-sky-200 rounded-lg overflow-hidden">
+                    <thead class="bg-sky-100">
+                        <tr>
+            `;
+            columnsToShow.forEach(header => {
+                tableHTML += `<th scope="col" class="px-6 py-3 text-left text-sm font-semibold text-sky-700 uppercase tracking-wider">${header}</th>`;
+            });
+            tableHTML += `</tr></thead><tbody class="bg-white divide-y divide-sky-100">`;
+
+            filteredData.forEach(row => {
+                tableHTML += `<tr>`;
+                columnsToShow.forEach(header => {
+                    const cellContent = row[header] || '';
+                    let cellClass = 'text-gray-700';
+                    if (header === 'เกรด' && (cellContent === 'ร' || cellContent === 'มส.' || cellContent === '0' || cellContent === 'F')) {
+                        cellClass = 'text-red-600 font-bold';
+                    }
+                    tableHTML += `<td class="px-6 py-4 whitespace-nowrap text-sm ${cellClass}">${cellContent}</td>`;
+                });
+                tableHTML += `</tr>`;
+            });
+
+            tableHTML += `</tbody></table>`;
+            tableContainer.innerHTML = tableHTML;
+        }
+
+        loginForm.addEventListener('submit', handleLogin);
+        logoutButton.addEventListener('click', handleLogout);
+        semesterFilter.addEventListener('change', (event) => {
+            if (allGradesData.length > 0) {
+                const selectedSemester = event.target.value;
+                renderTable(allGradesData, selectedSemester);
+                displayGPA(allGradesData, selectedSemester); 
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
